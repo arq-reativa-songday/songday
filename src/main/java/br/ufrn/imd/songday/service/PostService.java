@@ -3,7 +3,6 @@ package br.ufrn.imd.songday.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import br.ufrn.imd.songday.client.SongsClient;
@@ -18,7 +17,6 @@ import br.ufrn.imd.songday.model.User;
 import br.ufrn.imd.songday.repository.PostRepository;
 import br.ufrn.imd.songday.repository.UserReadOnlyRepository;
 import br.ufrn.imd.songday.util.DateUtil;
-import feign.FeignException;
 
 @Service
 public class PostService {
@@ -92,39 +90,29 @@ public class PostService {
         return repository.save(post);
     }
 
-    public int searchPostsCount(SearchPostsCountDto search) {
+    public Long searchPostsCount(SearchPostsCountDto search) {
         return repository.countByUserIdInAndCreatedAtBetween(search.getFollowees(), search.getStart(), search.getEnd());
     }
 
     private Boolean existsSongById(String songId) {
-        try {
-            ResponseEntity<Object> response = songsClient.findById(songId);
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                return false;
-            }
-            return response.getBody() != null ? true : false;
-        } catch (FeignException e) {
-            if (e.status() == 404) {
-                return false;
-            } else {
-                e.printStackTrace();
-                throw new ServicesCommunicationException(
-                        "Erro durante a comunicação com Songs para recuperar a música por id");
-            }
-        }
+        var song = songsClient.findById(songId)
+                .doOnError(e -> {
+                    if (e.getLocalizedMessage().contains("404 Not Found")) {
+                        throw new NotFoundException("Música não encontrada");
+                    }
+                    throw new ServicesCommunicationException(
+                            "Erro durante a comunicação com Songs para recuperar a música por id: "
+                                    + e.getLocalizedMessage());
+                }).block();
+        return song != null;
     }
 
-    private void updateSongScore(String songId) {
-        try {
-            ResponseEntity<Void> response = songsClient.updateScore(songId);
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new ServicesCommunicationException(
-                    "Erro durante a comunicação com Songs para atualizar o score da música");
-            }
-        } catch (FeignException e) {
-            e.printStackTrace();
-            throw new ServicesCommunicationException(
-                    "Erro durante a comunicação com Songs para atualizar o score da música");
-        }
+    private Void updateSongScore(String songId) {
+        return songsClient.updateScore(songId)
+                .doOnError(e -> {
+                    throw new ServicesCommunicationException(
+                            "Erro durante a comunicação com Songs para atualizar o score da música: "
+                                    + e.getLocalizedMessage());
+                }).block();
     }
 }

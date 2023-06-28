@@ -52,7 +52,7 @@ public class PostController {
     }
 
     @PostMapping("/search/count")
-    public ResponseEntity<Integer> searchPostsCount(@Valid @RequestBody SearchPostsCountDto search) {
+    public ResponseEntity<Long> searchPostsCount(@Valid @RequestBody SearchPostsCountDto search) {
         return ResponseEntity.ok(service.searchPostsCount(search));
     }
 }

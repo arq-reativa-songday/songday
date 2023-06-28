@@ -1,17 +1,18 @@
 package br.ufrn.imd.songday.client;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PutExchange;
 
-@FeignClient(name = "songs")
+import reactor.core.publisher.Mono;
+
+@HttpExchange("songs")
 public interface SongsClient {
-    @GetMapping(value = "/songs/{id}")
-    ResponseEntity<Object> findById(@PathVariable String id);
+    @GetExchange("/songs/{id}")
+    public Mono<Object> findById(@PathVariable String id);
 
-    @PutMapping(value = "/songpopularities/score")
-    ResponseEntity<Void> updateScore(@RequestParam String songId);
+    @PutExchange("/songpopularities/score")
+    public Mono<Void> updateScore(@RequestParam(name = "songId") String songId);
 }

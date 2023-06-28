@@ -28,5 +28,5 @@ public interface PostRepository extends MongoRepository<Post, String> {
     })
     List<PostSearchDto> findPosts(Set<String> followees, int offset, int limit);
 
-    int countByUserIdInAndCreatedAtBetween(Set<String> followees, Date start, Date end);
+    Long countByUserIdInAndCreatedAtBetween(Set<String> followees, Date start, Date end);
 }
