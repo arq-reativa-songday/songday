@@ -71,7 +71,7 @@ public class UserController {
 
     @GetMapping("/username/{username}/followees")
     public ResponseEntity<Set<String>> getFolloweesByUsername(@PathVariable String username) {
-        Set<String> followees = service.findByUsername(username).getFollowees();
+        Set<String> followees = service.findFolloweesByUsername(username);
         return ResponseEntity.ok(followees);
     }
 }
