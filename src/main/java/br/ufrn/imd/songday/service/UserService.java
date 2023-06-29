@@ -1,13 +1,16 @@
 package br.ufrn.imd.songday.service;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import br.ufrn.imd.songday.cache.FolloweesCacheWrapper;
 import br.ufrn.imd.songday.exception.NotFoundException;
 import br.ufrn.imd.songday.exception.ValidationException;
 import br.ufrn.imd.songday.model.User;
@@ -15,11 +18,17 @@ import br.ufrn.imd.songday.repository.UserRepository;
 
 @Service
 public class UserService {
+    @Value("${api.cached}")
+    private Boolean cacheActive;
+
     @Autowired
     private UserRepository repository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private FolloweesCacheWrapper followeesCache;
 
     public User createUser(User newUser) {
         Optional<User> search = repository.findByUsername(newUser.getUsername());
@@ -61,7 +70,11 @@ public class UserService {
         findById(idFollowee);
 
         user.getFollowees().add(idFollowee);
-        return repository.save(user);
+        User userSaved = repository.save(user);
+        if (cacheActive) {
+            followeesCache.delete(userSaved.getUsername());
+        }
+        return userSaved;
     }
 
     public User unfollow(String idFollowee, String userId) {
@@ -72,11 +85,24 @@ public class UserService {
         }
 
         user.getFollowees().remove(idFollowee);
-        return repository.save(user);
+        User userSaved = repository.save(user);
+        if (cacheActive) {
+            followeesCache.delete(userSaved.getUsername());
+        }
+        return userSaved;
     }
 
     public User findByUsername(String username) {
         return repository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(String.format("O usuário '%s' não foi encontrado", username)));
+    }
+
+    public Set<String> findFolloweesByUsername(String username) {
+        if (cacheActive) {
+            return followeesCache.get(username);
+        }
+
+        Set<String> followees = findByUsername(username).getFollowees();
+        return followees;
     }
 }

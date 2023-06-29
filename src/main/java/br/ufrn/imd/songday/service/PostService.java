@@ -1,10 +1,5 @@
 package br.ufrn.imd.songday.service;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import br.ufrn.imd.songday.client.SongsClient;
 import br.ufrn.imd.songday.dto.post.PostSearchDto;
 import br.ufrn.imd.songday.dto.post.SearchPostsCountDto;
@@ -17,6 +12,13 @@ import br.ufrn.imd.songday.model.User;
 import br.ufrn.imd.songday.repository.PostRepository;
 import br.ufrn.imd.songday.repository.UserReadOnlyRepository;
 import br.ufrn.imd.songday.util.DateUtil;
+import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class PostService {
@@ -28,6 +30,9 @@ public class PostService {
 
     @Autowired
     private UserReadOnlyRepository userReadOnlyRepository;
+
+    @Autowired
+    private RedissonClient redisClient;
 
     public Post createPost(Post newPost) {
         User user = userReadOnlyRepository.findById(newPost.getUserId())
@@ -107,12 +112,15 @@ public class PostService {
         return song != null;
     }
 
-    private Void updateSongScore(String songId) {
-        return songsClient.updateScore(songId)
-                .doOnError(e -> {
-                    throw new ServicesCommunicationException(
-                            "Erro durante a comunicação com Songs para atualizar o score da música: "
-                                    + e.getLocalizedMessage());
-                }).block();
+    private void updateSongScore(String songId) {
+        RTopic songPopularityTopic = redisClient.getTopic("songPopularityTopic", StringCodec.INSTANCE);
+        long subNumber = songPopularityTopic.publish(songId);
+        System.out.println("Consumidores: " + subNumber);
+//        return songsClient.updateScore(songId)
+//                .doOnError(e -> {
+//                    throw new ServicesCommunicationException(
+//                            "Erro durante a comunicação com Songs para atualizar o score da música: "
+//                                    + e.getLocalizedMessage());
+//                }).block();
     }
 }
