@@ -41,7 +41,6 @@ public class FolloweesCacheRemoto extends CacheTemplate<String, Set<String>> {
 
     @Override
     protected Set<String> updateSource(String key, Set<String> entity) {
-        System.out.println("Atualizando chave " + key + " no banco (???)");
         //
         return entity;
     }
@@ -55,7 +54,6 @@ public class FolloweesCacheRemoto extends CacheTemplate<String, Set<String>> {
 
     @Override
     protected void deleteFromSource(String key) {
-        System.out.println("Excluindo chave " + key + " do banco (???)");
         //
     }
 
