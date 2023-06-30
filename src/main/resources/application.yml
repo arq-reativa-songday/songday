@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: songday
+  profiles:
+    active: dev
+  config:
+    import: optional:configserver:http://localhost:8888
+
+server:
+  port: 8095
